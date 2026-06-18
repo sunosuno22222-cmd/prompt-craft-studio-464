@@ -101,7 +101,8 @@ function ChatPage() {
     sentInitialRef.current = true;
     void sendMessage({ text: initial });
     clearPending(chatId);
-  }, [chatId, sendMessage, messages.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatId]);
 
   // Auto-scroll on new messages / streaming.
   useEffect(() => {
@@ -113,15 +114,22 @@ function ChatPage() {
   const isLoading = status === "submitted" || status === "streaming";
 
   // Pull files from the most recent assistant message that has any.
-  const latestFiles: ParsedFile[] = useMemo(() => {
+  // Only recompute when not streaming, to avoid remounting Sandpack on every token.
+  const [stableFiles, setStableFiles] = useState<ParsedFile[]>([]);
+  useEffect(() => {
+    if (isLoading) return;
     for (let i = messages.length - 1; i >= 0; i--) {
       const m = messages[i];
       if (m.role !== "assistant") continue;
       const files = parseFiles(getMessageText(m));
-      if (files.length > 0) return files;
+      if (files.length > 0) {
+        setStableFiles(files);
+        return;
+      }
     }
-    return [];
-  }, [messages]);
+  }, [isLoading, messages]);
+
+  const latestFiles = stableFiles;
 
   const sandpackFiles = useMemo(() => {
     const files: Record<string, { code: string; hidden?: boolean; active?: boolean }> = {
@@ -145,6 +153,7 @@ function ChatPage() {
     }
     return files;
   }, [latestFiles]);
+
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
