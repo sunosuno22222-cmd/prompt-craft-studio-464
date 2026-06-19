@@ -121,12 +121,6 @@ function escapeForScript(value: string) {
   return value.replace(/<\/script/gi, "<\\/script");
 }
 
-function serializeFunction(fn: Function) {
-  return Function.prototype.toString
-    .call(fn)
-    .replace(/<\/script/gi, "<\\/script");
-}
-
 function collectReactBindings(source: string) {
   const declarations: string[] = [];
   source.replace(/import\s+([^;]+?)\s+from\s+["']react["'];?/g, (_match, spec: string) => {
