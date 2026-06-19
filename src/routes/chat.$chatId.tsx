@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import * as React from "react";
+import { createRoot } from "react-dom/client";
 import ReactMarkdown from "react-markdown";
 import {
   ArrowLeft,
@@ -15,6 +16,9 @@ import {
 } from "lucide-react";
 import { readPending, clearPending } from "@/lib/chat-store";
 import { parseFiles, stripFileBlocks, type ParsedFile } from "@/lib/parse-files";
+
+const { useEffect, useMemo, useRef, useState } = React;
+type FormEvent = React.FormEvent;
 
 export const Route = createFileRoute("/chat/$chatId")({
   head: () => ({
