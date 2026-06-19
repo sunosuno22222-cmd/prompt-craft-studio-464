@@ -7,6 +7,7 @@
       "dependencies": {
         "@ai-sdk/groq": "^3.0.42",
         "@ai-sdk/react": "^3.0.209",
+        "@babel/standalone": "^8.0.1",
         "@codesandbox/sandpack-react": "^2.20.0",
         "@hookform/resolvers": "^5.2.2",
         "@radix-ui/react-accordion": "^1.2.12",
@@ -135,6 +136,8 @@
     "@babel/plugin-transform-react-jsx-source": ["@babel/plugin-transform-react-jsx-source@7.27.1", "", { "dependencies": { "@babel/helper-plugin-utils": "^7.27.1" }, "peerDependencies": { "@babel/core": "^7.0.0-0" } }, "sha512-zbwoTsBruTeKB9hSq73ha66iFeJHuaFkUbwvqElnygoNbj/jHRsSeokowZFN3CZ64IvEqcmmkVe89OPXc7ldAw=="],
 
     "@babel/runtime": ["@babel/runtime@7.29.2", "", {}, "sha512-JiDShH45zKHWyGe4ZNVRrCjBz8Nh9TMmZG1kh4QTK8hCBTWBi8Da+i7s1fJw7/lYpM4ccepSNfqzZ/QvABBi5g=="],
+
+    "@babel/standalone": ["@babel/standalone@8.0.1", "https://europe-west4-npm.pkg.dev/lovable-core-prod/sandbox-npm-cache/@babel/standalone/-/standalone-8.0.1.tgz", {}, "sha512-DQ0xgEgD2AVEmAzuO+0Pr2VJHDL23ibW5tiIcBIaa+gOjDLqje/Nz/Y5zXnoyPjVsIZJxSb6U+yFde7ofyaoDw=="],
 
     "@babel/template": ["@babel/template@7.28.6", "", { "dependencies": { "@babel/code-frame": "^7.28.6", "@babel/parser": "^7.28.6", "@babel/types": "^7.28.6" } }, "sha512-YA6Ma2KsCdGb+WC6UpBVFJGXL58MDA6oyONbjyF/+5sBgxY/dwkhLogbMT2GXXyU84/IhRw/2D1Os1B/giz+BQ=="],
 
