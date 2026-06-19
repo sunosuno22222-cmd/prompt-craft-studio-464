@@ -25,7 +25,7 @@ Rules for files:
 - Use normal CSS class names from styles.css. Do NOT rely on Tailwind, CDN scripts, or external stylesheets.
 - Keep the React app in App.jsx self-contained. Do not import local component files.
 - Do NOT include package.json, index.html, or index.js — the sandbox provides them.
-- Do NOT import any external npm packages other than "react". Use only built-in browser APIs and Tailwind.
+- Do NOT import any external npm packages other than "react". Use only built-in browser APIs and your own CSS.
 - Make the UI beautiful: thoughtful spacing, modern typography, gradients, smooth hover states, responsive layout.
 - If the user asks for changes in a follow-up message, output the FULL updated content of any files that changed (do not output diffs).
 - Never wrap file contents in triple backticks. Use the <file> tag exactly as shown.
