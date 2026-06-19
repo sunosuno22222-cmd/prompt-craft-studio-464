@@ -226,7 +226,7 @@ function LocalPreview({ files, nonce }: { files: ParsedFile[]; nonce: number }) 
     <iframe
       key={nonce}
       title="Preview local"
-      sandbox="allow-scripts allow-same-origin"
+      sandbox="allow-scripts"
       srcDoc={srcDoc}
       className="h-full w-full border-0 bg-white"
     />
