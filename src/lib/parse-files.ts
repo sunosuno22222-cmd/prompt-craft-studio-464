@@ -20,5 +20,8 @@ export function parseFiles(text: string): ParsedFile[] {
 
 // Strip file blocks from the text so we can show only the explanation in chat.
 export function stripFileBlocks(text: string): string {
-  return text.replace(FILE_RE, "").trim();
+  return text
+    .replace(FILE_RE, "")
+    .replace(/<file\b[\s\S]*$/i, "")
+    .trim();
 }
