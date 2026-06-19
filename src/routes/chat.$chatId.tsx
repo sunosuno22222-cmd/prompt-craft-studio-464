@@ -176,7 +176,7 @@ function buildPreviewDocument(files: ParsedFile[], transform: (code: string, opt
   const compiled = transform(prepared, {
     filename: "App.jsx",
     presets: [
-      ["typescript", { isTSX: true, allExtensions: true }],
+      ["typescript", { ignoreExtensions: true }],
       ["react", { runtime: "classic" }],
     ],
     sourceType: "script",
