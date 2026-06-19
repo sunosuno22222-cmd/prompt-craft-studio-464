@@ -184,7 +184,8 @@ function buildPreviewDocument(files: ParsedFile[], transform: (code: string, opt
     <div id="root"></div>
     <script type="module">
       import React from "/node_modules/.vite/deps/react.js?v=xzafe-preview";
-      import { createRoot } from "/node_modules/.vite/deps/react-dom_client.js?v=xzafe-preview";
+      import ReactDOMClient from "/node_modules/.vite/deps/react-dom_client.js?v=xzafe-preview";
+      const { createRoot } = ReactDOMClient;
       const showError = (error) => {
         const root = document.getElementById("root");
         root.innerHTML = '<main style="min-height:100vh;display:grid;place-items:center;background:#080808;color:#fff;font-family:Arial,sans-serif;padding:24px"><div style="max-width:560px"><h1 style="font-size:18px;margin:0 0 8px">Erro no preview</h1><pre style="white-space:pre-wrap;color:#fb7185;background:rgba(255,255,255,.06);padding:14px;border-radius:12px;overflow:auto">' + String(error && (error.stack || error.message) || error).replace(/[&<>]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])) + '</pre></div></main>';
