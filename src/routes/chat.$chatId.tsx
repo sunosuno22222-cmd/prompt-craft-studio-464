@@ -20,6 +20,13 @@ import { parseFiles, stripFileBlocks, type ParsedFile } from "@/lib/parse-files"
 const { useEffect, useMemo, useRef, useState } = React;
 type FormEvent = React.FormEvent;
 
+declare global {
+  interface Window {
+    __XZAFE_PREVIEW_REACT__?: typeof React;
+    __XZAFE_PREVIEW_CREATE_ROOT__?: typeof createRoot;
+  }
+}
+
 export const Route = createFileRoute("/chat/$chatId")({
   head: () => ({
     meta: [{ title: "XZAFE AIcode — Preview" }],
