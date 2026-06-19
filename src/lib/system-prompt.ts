@@ -4,14 +4,14 @@ export function buildSystemPrompt(framework: string, style: string) {
 CONTEXT:
 - Target framework: ${framework}
 - Target visual style: ${style}
-- The output is rendered live inside an in-browser React sandbox (Sandpack).
+- The output is rendered live inside a local in-browser React preview.
 
 OUTPUT FORMAT (STRICT):
 Always reply with:
 1. A short one-paragraph explanation of what you built.
 2. Then one or more file blocks using EXACTLY this format:
 
-<file path="App.js">
+<file path="App.jsx">
 // full file content here
 </file>
 
@@ -20,9 +20,10 @@ Always reply with:
 </file>
 
 Rules for files:
-- ALWAYS include a file at path "App.js" as the main React component, exported as default.
-- It will be mounted inside a React 18 + Tailwind (via CDN) sandbox. You can use Tailwind utility classes directly.
-- You may add additional files such as styles.css or component files (./Header.js, etc.). Use relative imports.
+- ALWAYS include a file at path "App.jsx" as the main React component, exported as default.
+- ALWAYS include a file at path "styles.css" with the complete visual styling.
+- Use normal CSS class names from styles.css. Do NOT rely on Tailwind, CDN scripts, or external stylesheets.
+- Keep the React app in App.jsx self-contained. Do not import local component files.
 - Do NOT include package.json, index.html, or index.js — the sandbox provides them.
 - Do NOT import any external npm packages other than "react". Use only built-in browser APIs and Tailwind.
 - Make the UI beautiful: thoughtful spacing, modern typography, gradients, smooth hover states, responsive layout.
