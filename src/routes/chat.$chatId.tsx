@@ -158,81 +158,55 @@ function buildPreviewErrorDocument(message: string) {
   return `<!doctype html><html><body style="margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif;display:grid;place-items:center;min-height:100vh;padding:24px"><div style="max-width:520px"><h1 style="font-size:18px;margin:0 0 8px">Preview não carregou</h1><pre style="white-space:pre-wrap;color:#fb7185;background:rgba(255,255,255,.06);padding:14px;border-radius:12px">${escapeHtml(message)}</pre></div></body></html>`;
 }
 
-function buildPreviewDocument(files: ParsedFile[], transform: (code: string, options?: unknown) => { code?: string | null }) {
+function buildPreviewDocument(files: ParsedFile[]) {
   const app = getFile(files, "App.jsx") || STARTER_APP;
   const css = getFile(files, "styles.css") || STARTER_CSS;
   const prepared = prepareAppSource(app);
-  const compiled = transform(prepared, {
-    filename: "App.jsx",
-    presets: [
-      ["typescript", { ignoreExtensions: true }],
-      ["react", { runtime: "classic" }],
-    ],
-    sourceType: "script",
-  }).code;
-
-  if (!compiled) return buildPreviewErrorDocument("Não foi possível compilar App.jsx.");
 
   return `<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>${escapeForStyle(css)}</style>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module">
-      import React from "/node_modules/.vite/deps/react.js?v=xzafe-preview";
-      import ReactDOMClient from "/node_modules/.vite/deps/react-dom_client.js?v=xzafe-preview";
-      const { createRoot } = ReactDOMClient;
-      const showError = (error) => {
-        const root = document.getElementById("root");
-        root.innerHTML = '<main style="min-height:100vh;display:grid;place-items:center;background:#080808;color:#fff;font-family:Arial,sans-serif;padding:24px"><div style="max-width:560px"><h1 style="font-size:18px;margin:0 0 8px">Erro no preview</h1><pre style="white-space:pre-wrap;color:#fb7185;background:rgba(255,255,255,.06);padding:14px;border-radius:12px;overflow:auto">' + String(error && (error.stack || error.message) || error).replace(/[&<>]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])) + '</pre></div></main>';
-      };
-      window.addEventListener("error", (event) => showError(event.error || event.message));
-      try {
-        ${escapeForScript(compiled)}
-        if (typeof App === "undefined") throw new Error("App.jsx precisa exportar um componente App como default.");
-        createRoot(document.getElementById("root")).render(React.createElement(App));
-      } catch (error) {
-        showError(error);
-      }
+    <script type="text/plain" id="__app_src">${escapeForScript(prepared)}</script>
+    <script>
+      (function(){
+        var showError = function(err){
+          var msg = String(err && (err.stack || err.message) || err).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; });
+          document.getElementById('root').innerHTML = '<main style="min-height:100vh;display:grid;place-items:center;background:#080808;color:#fff;font-family:Arial,sans-serif;padding:24px"><div style="max-width:560px"><h1 style="font-size:18px;margin:0 0 8px">Erro no preview</h1><pre style="white-space:pre-wrap;color:#fb7185;background:rgba(255,255,255,.06);padding:14px;border-radius:12px;overflow:auto">' + msg + '</pre></div></main>';
+        };
+        window.addEventListener('error', function(e){ showError(e.error || e.message); });
+        try {
+          var src = document.getElementById('__app_src').textContent;
+          var out = Babel.transform(src, { presets: [['react', { runtime: 'classic' }], ['typescript', { allExtensions: true, isTSX: true }]], filename: 'App.tsx' }).code;
+          (new Function('React', 'ReactDOM', out + '\\nif (typeof App === "undefined") throw new Error("App.jsx precisa exportar um componente App como default."); ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));'))(window.React, window.ReactDOM);
+        } catch(err) { showError(err); }
+      })();
     </script>
   </body>
 </html>`;
 }
 
 function LocalPreview({ files, nonce }: { files: ParsedFile[]; nonce: number }) {
-  const [srcDoc, setSrcDoc] = useState(() => buildPreviewErrorDocument("Preparando preview…"));
-
-  useEffect(() => {
-    let active = true;
-    setSrcDoc(buildPreviewErrorDocument("Preparando preview…"));
-    void import("@babel/standalone")
-      .then((Babel) => {
-        if (!active) return;
-        setSrcDoc(buildPreviewDocument(files, Babel.transform));
-      })
-      .catch((err) => {
-        if (!active) return;
-        setSrcDoc(buildPreviewErrorDocument(err instanceof Error ? err.message : "Erro ao compilar."));
-      });
-    return () => {
-      active = false;
-    };
-  }, [files, nonce]);
-
+  const srcDoc = useMemo(() => buildPreviewDocument(files), [files]);
   return (
     <iframe
       key={nonce}
       title="Preview local"
-      sandbox="allow-scripts allow-same-origin"
+      sandbox="allow-scripts"
       srcDoc={srcDoc}
       className="h-full w-full border-0 bg-white"
     />
   );
 }
+
 
 function CodeViewer({ files }: { files: ParsedFile[] }) {
   const [selected, setSelected] = useState(files[0]?.path ?? "App.jsx");
