@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "sdk_version": "0.23.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "xzafe-aicode-mcp",
+      "version": "0.1.0",
+      "title": "XZAFE AIcode"
+    },
+    "tools": [
+      {
+        "name": "generate_ui",
+        "title": "Generate UI",
+        "description": "Generate a complete, self-contained React UI (App.jsx + styles.css) from a prompt using XZAFE AIcode. Returns the raw model output containing <file path=\"...\">...</file> blocks.",
+        "annotations": {
+          "readOnlyHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "prompt": {
+              "type": "string",
+              "minLength": 1,
+              "description": "What UI to build."
+            },
+            "framework": {
+              "description": "Target framework. Defaults to React.",
+              "type": "string"
+            },
+            "style": {
+              "description": "Visual style. Defaults to Minimalist.",
+              "type": "string"
+            }
+          },
+          "required": [
+            "prompt"
+          ]
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
