@@ -185,7 +185,7 @@ function buildPreviewDocument(files: ParsedFile[]) {
         window.addEventListener('error', function(e){ showError(e.error || e.message); });
         try {
           var src = document.getElementById('__app_src').textContent;
-          var out = Babel.transform(src, { presets: [['react', { runtime: 'classic' }], ['typescript', { allExtensions: true, isTSX: true }]], filename: 'App.tsx' }).code;
+          var out = Babel.transform(src, { presets: [['react', { runtime: 'classic' }], ['typescript', { onlyRemoveTypeImports: true, ignoreExtensions: true }]], plugins: ['syntax-jsx'], filename: 'App.tsx' }).code;
           (new Function('React', 'ReactDOM', out + '\\nif (typeof App === "undefined") throw new Error("App.jsx precisa exportar um componente App como default."); ReactDOM.createRoot(document.getElementById("root")).render(React.createElement(App));'))(window.React, window.ReactDOM);
         } catch(err) { showError(err); }
       })();
