@@ -10,10 +10,10 @@ export const Route = createFileRoute("/")({
         content:
           "Describe a website and XZAFE AIcode generates a complete, beautiful web interface in seconds.",
       },
-      { property: "og:title", content: "XZAFE AIcode" },
+      { property: "og:title", content: "XZAFE AIcode — Generate web interfaces with AI" },
       {
         property: "og:description",
-        content: "AI-powered web interface generator.",
+        content: "Describe a website and XZAFE AIcode generates a complete, beautiful web interface in seconds.",
       },
     ],
   }),
