@@ -1,9 +1,8 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 
-// DeepSeek V3.1 Terminus é o checkpoint mais recente/forte da família DeepSeek
-// disponível no catálogo NVIDIA NIM (não existe "V4 Pro" publicado ainda).
-// Docs: https://docs.api.nvidia.com/nim/reference/deepseek-ai-deepseek-v3_1-terminus
-export const NVIDIA_MODEL_ID = "deepseek-ai/deepseek-v3.1-terminus";
+// DeepSeek V4 Pro (1.6T params MoE, 49B ativos, contexto de 1M tokens).
+// Docs: https://docs.api.nvidia.com/nim/reference/deepseek-ai-deepseek-v4-pro
+export const NVIDIA_MODEL_ID = "deepseek-ai/deepseek-v4-pro";
 
 export function createNvidiaProvider(apiKey: string) {
   return createOpenAICompatible({
