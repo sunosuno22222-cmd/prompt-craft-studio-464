@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createGroq } from "@ai-sdk/groq";
 import { convertToModelMessages, streamText, type UIMessage } from "ai";
 import { buildSystemPrompt } from "@/lib/system-prompt";
+import { createNvidiaProvider, NVIDIA_MODEL_ID } from "@/lib/nvidia";
 
 interface ChatBody {
   messages?: UIMessage[];
@@ -13,9 +13,9 @@ export const Route = createFileRoute("/api/chat")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = process.env.GROQ_API_KEY;
+        const apiKey = process.env.NVIDIA_API_KEY;
         if (!apiKey) {
-          return new Response("Missing GROQ_API_KEY", { status: 500 });
+          return new Response("Missing NVIDIA_API_KEY", { status: 500 });
         }
 
         let body: ChatBody;
@@ -30,8 +30,8 @@ export const Route = createFileRoute("/api/chat")({
           return new Response("Messages are required", { status: 400 });
         }
 
-        const groq = createGroq({ apiKey });
-        const model = groq("openai/gpt-oss-120b");
+        const nvidia = createNvidiaProvider(apiKey);
+        const model = nvidia(NVIDIA_MODEL_ID);
 
         const result = streamText({
           model,

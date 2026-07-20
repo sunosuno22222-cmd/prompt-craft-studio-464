@@ -15,7 +15,7 @@
       {
         "name": "generate_ui",
         "title": "Generate UI",
-        "description": "Generate a complete, self-contained React UI (App.jsx + styles.css) from a prompt using XZAFE AIcode. Returns the raw model output containing <file path=\"...\">...</file> blocks.",
+        "description": "Generate a complete, self-contained React UI (App.jsx + styles.css) from a prompt using XZAFE AIcode (DeepSeek V3.1 Terminus via NVIDIA). Returns the raw model output containing <file path=\"...\">...</file> blocks.",
         "annotations": {
           "readOnlyHint": true,
           "openWorldHint": false
