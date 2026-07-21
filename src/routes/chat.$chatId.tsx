@@ -202,12 +202,49 @@ function LocalPreview({ files, nonce }: { files: ParsedFile[]; nonce: number }) 
     <iframe
       key={nonce}
       title="Preview local"
-      sandbox="allow-scripts"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
       srcDoc={srcDoc}
       className="h-full w-full border-0 bg-white"
     />
   );
 }
+
+const IDLE_STATUSES = [
+  "Saudando…",
+  "Analisando o pedido…",
+  "Planejando componentes…",
+  "Definindo estrutura…",
+  "Escolhendo paleta…",
+  "Preparando arquivos…",
+];
+
+function deriveStatus(text: string, tick: number): string {
+  const opens = [...text.matchAll(/<file\s+path=["']([^"']+)["']\s*>/g)];
+  const closes = [...text.matchAll(/<\/file>/g)];
+  if (opens.length === 0) return IDLE_STATUSES[tick % IDLE_STATUSES.length];
+  if (opens.length > closes.length) {
+    return `Gerando ${opens[opens.length - 1][1]}…`;
+  }
+  return `Finalizando ${opens[opens.length - 1][1]}…`;
+}
+
+function StatusBubble({ text }: { text: string }) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 900);
+    return () => clearInterval(id);
+  }, []);
+  const status = deriveStatus(text, tick);
+  return (
+    <div className="inline-flex items-center gap-2.5 rounded-2xl bg-white/[0.05] border border-white/10 px-3.5 py-2">
+      <Brain className="w-4 h-4 text-io-blue animate-pulse" />
+      <span key={status} className="text-sm text-white/80 font-medium animate-in fade-in duration-300">
+        {status}
+      </span>
+    </div>
+  );
+}
+
 
 
 function CodeViewer({ files }: { files: ParsedFile[] }) {
