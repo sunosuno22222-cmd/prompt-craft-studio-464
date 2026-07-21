@@ -100,11 +100,8 @@ function getFile(files: ParsedFile[], path: string) {
   return files.find((file) => file.path.toLowerCase() === path.toLowerCase())?.content ?? "";
 }
 
-function escapeHtml(value: string) {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
 function escapeForStyle(value: string) {
+
   return value.replace(/<\/style/gi, "<\\/style");
 }
 
