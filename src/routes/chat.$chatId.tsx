@@ -236,7 +236,7 @@ function deriveStatus(text: string, tick: number): string {
 function StatusBubble({ text }: { text: string }) {
   const [tick, setTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 900);
+    const id = setInterval(() => setTick((t) => t + 1), 2600);
     return () => clearInterval(id);
   }, []);
   const status = deriveStatus(text, tick);
