@@ -411,8 +411,11 @@ function ChatPage() {
             {messages.length === 0 && (
               <div className="text-center text-white/40 text-sm pt-10">Iniciando…</div>
             )}
-            {messages.map((message) => {
+            {messages.map((message, idx) => {
               const text = getMessageText(message);
+              const isLastAssistant =
+                message.role === "assistant" && idx === messages.length - 1;
+              const streamingThis = isLastAssistant && isLoading;
               const display = message.role === "assistant" ? stripFileBlocks(text) : text;
               const files = message.role === "assistant" ? parseFiles(text) : [];
               return (
@@ -424,23 +427,36 @@ function ChatPage() {
                     className={
                       message.role === "user"
                         ? "max-w-[85%] rounded-2xl rounded-tr-sm px-4 py-2.5 bg-white text-black text-sm font-medium shadow-lg"
-                        : "max-w-[95%] text-white/90 text-sm leading-relaxed"
+                        : "max-w-[95%] text-white/90 text-sm leading-relaxed space-y-2"
                     }
                   >
                     {message.role === "assistant" ? (
-                      <div className="prose prose-invert prose-sm max-w-none prose-p:my-2 prose-pre:hidden prose-code:hidden">
-                        <ReactMarkdown>{display || (isLoading ? "Criando os arquivos…" : "Pronto.")}</ReactMarkdown>
-                        {files.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setPreviewOpen(true)}
-                            className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/15 text-[10px] font-bold uppercase tracking-wider text-white transition"
-                          >
-                            <Code2 className="w-3 h-3" />
-                            Abrir {files.length} arquivo{files.length === 1 ? "" : "s"}
-                          </button>
-                        )}
-                      </div>
+                      streamingThis ? (
+                        <StatusBubble text={text} />
+                      ) : (
+                        <>
+                          {display && (
+                            <div className="prose prose-invert prose-sm max-w-none prose-p:my-2 prose-pre:hidden prose-code:hidden">
+                              <ReactMarkdown>{display}</ReactMarkdown>
+                            </div>
+                          )}
+                          {files.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {files.map((f) => (
+                                <button
+                                  key={f.path}
+                                  type="button"
+                                  onClick={() => setPreviewOpen(true)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[11px] font-semibold text-white/85 transition"
+                                >
+                                  <FileCode2 className="w-3 h-3 text-io-blue" />
+                                  {f.path}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )
                     ) : (
                       <span className="whitespace-pre-wrap">{display}</span>
                     )}
@@ -448,12 +464,13 @@ function ChatPage() {
                 </div>
               );
             })}
-            {isLoading && (
-              <div className="flex items-center gap-2 text-xs text-white/40">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>{status === "submitted" ? "Pensando…" : "Mensagem chegando em tempo real…"}</span>
-              </div>
-            )}
+            {isLoading &&
+              (messages.length === 0 || messages[messages.length - 1].role === "user") && (
+                <div className="flex justify-start">
+                  <StatusBubble text="" />
+                </div>
+              )}
+
             {error && (
               <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
                 {error.message || "Algo deu errado. Tente novamente."}
