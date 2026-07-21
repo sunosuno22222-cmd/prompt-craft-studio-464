@@ -141,29 +141,36 @@ function collectReactBindings(source: string) {
   return declarations.join("\n");
 }
 
-function prepareAppSource(source: string) {
-  const reactBindings = collectReactBindings(source);
-  const appSource = source
+function stripModuleSyntax(source: string) {
+  return source
     .replace(/import\s+[^;]+?\s+from\s+["']react["'];?\n?/g, "")
     .replace(/import\s+["'][^"']+\.css["'];?\n?/g, "")
-    .replace(/import\s+[^;]+?\s+from\s+["']\.?\.?\/[^"']+["'];?\n?/g, "")
-    .replace(/export\s+default\s+function\s+App/g, "function App")
-    .replace(/export\s+default\s+function\s*\(/g, "function App(")
-    .replace(/export\s+default\s+App\s*;?/g, "")
-    .replace(/export\s+default\s+/g, "const App = ")
-    .replace(/export\s+\{[^}]+\};?/g, "");
-
-  return `${reactBindings}\n${appSource}`;
+    .replace(/import\s+[^;]+?\s+from\s+["'][^"']+["'];?\n?/g, "")
+    .replace(/export\s+default\s+function\s+([A-Za-z_$][\w$]*)/g, "function $1")
+    .replace(/export\s+default\s+function\s*\(/g, "function __default__(")
+    .replace(/export\s+default\s+([A-Za-z_$][\w$]*)\s*;?/g, "")
+    .replace(/export\s+default\s+/g, "const __default__ = ")
+    .replace(/export\s+\{[^}]+\};?/g, "")
+    .replace(/export\s+(const|let|var|function|class)\s+/g, "$1 ");
 }
 
-function buildPreviewErrorDocument(message: string) {
-  return `<!doctype html><html><body style="margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif;display:grid;place-items:center;min-height:100vh;padding:24px"><div style="max-width:520px"><h1 style="font-size:18px;margin:0 0 8px">Preview não carregou</h1><pre style="white-space:pre-wrap;color:#fb7185;background:rgba(255,255,255,.06);padding:14px;border-radius:12px">${escapeHtml(message)}</pre></div></body></html>`;
+function prepareCombinedSource(files: ParsedFile[]) {
+  const app = getFile(files, "App.jsx") || STARTER_APP;
+  const others = files.filter(
+    (f) => f.path !== "App.jsx" && !/\.css$/i.test(f.path),
+  );
+  const reactBindings = collectReactBindings([app, ...others.map((o) => o.content)].join("\n"));
+  const combined = [
+    reactBindings,
+    ...others.map((o) => `// ---- ${o.path} ----\n${stripModuleSyntax(o.content)}`),
+    `// ---- App.jsx ----\n${stripModuleSyntax(app)}`,
+  ].join("\n\n");
+  return combined;
 }
 
 function buildPreviewDocument(files: ParsedFile[]) {
-  const app = getFile(files, "App.jsx") || STARTER_APP;
   const css = getFile(files, "styles.css") || STARTER_CSS;
-  const prepared = prepareAppSource(app);
+  const prepared = prepareCombinedSource(files);
 
   return `<!doctype html>
 <html>
@@ -195,6 +202,7 @@ function buildPreviewDocument(files: ParsedFile[]) {
   </body>
 </html>`;
 }
+
 
 function LocalPreview({ files, nonce }: { files: ParsedFile[]; nonce: number }) {
   const srcDoc = useMemo(() => buildPreviewDocument(files), [files]);
