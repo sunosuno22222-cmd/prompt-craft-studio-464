@@ -12,6 +12,8 @@ import {
   ChevronDown,
   ChevronUp,
   RotateCcw,
+  Brain,
+  FileCode2,
 } from "lucide-react";
 import { readPending, clearPending } from "@/lib/chat-store";
 import { parseFiles, stripFileBlocks, type ParsedFile } from "@/lib/parse-files";
