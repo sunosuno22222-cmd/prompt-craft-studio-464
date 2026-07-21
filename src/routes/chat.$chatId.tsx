@@ -12,6 +12,8 @@ import {
   ChevronDown,
   ChevronUp,
   RotateCcw,
+  Brain,
+  FileCode2,
 } from "lucide-react";
 import { readPending, clearPending } from "@/lib/chat-store";
 import { parseFiles, stripFileBlocks, type ParsedFile } from "@/lib/parse-files";
@@ -98,11 +100,8 @@ function getFile(files: ParsedFile[], path: string) {
   return files.find((file) => file.path.toLowerCase() === path.toLowerCase())?.content ?? "";
 }
 
-function escapeHtml(value: string) {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
 function escapeForStyle(value: string) {
+
   return value.replace(/<\/style/gi, "<\\/style");
 }
 
@@ -139,29 +138,36 @@ function collectReactBindings(source: string) {
   return declarations.join("\n");
 }
 
-function prepareAppSource(source: string) {
-  const reactBindings = collectReactBindings(source);
-  const appSource = source
+function stripModuleSyntax(source: string) {
+  return source
     .replace(/import\s+[^;]+?\s+from\s+["']react["'];?\n?/g, "")
     .replace(/import\s+["'][^"']+\.css["'];?\n?/g, "")
-    .replace(/import\s+[^;]+?\s+from\s+["']\.?\.?\/[^"']+["'];?\n?/g, "")
-    .replace(/export\s+default\s+function\s+App/g, "function App")
-    .replace(/export\s+default\s+function\s*\(/g, "function App(")
-    .replace(/export\s+default\s+App\s*;?/g, "")
-    .replace(/export\s+default\s+/g, "const App = ")
-    .replace(/export\s+\{[^}]+\};?/g, "");
-
-  return `${reactBindings}\n${appSource}`;
+    .replace(/import\s+[^;]+?\s+from\s+["'][^"']+["'];?\n?/g, "")
+    .replace(/export\s+default\s+function\s+([A-Za-z_$][\w$]*)/g, "function $1")
+    .replace(/export\s+default\s+function\s*\(/g, "function __default__(")
+    .replace(/export\s+default\s+([A-Za-z_$][\w$]*)\s*;?/g, "")
+    .replace(/export\s+default\s+/g, "const __default__ = ")
+    .replace(/export\s+\{[^}]+\};?/g, "")
+    .replace(/export\s+(const|let|var|function|class)\s+/g, "$1 ");
 }
 
-function buildPreviewErrorDocument(message: string) {
-  return `<!doctype html><html><body style="margin:0;background:#080808;color:#fff;font-family:Arial,sans-serif;display:grid;place-items:center;min-height:100vh;padding:24px"><div style="max-width:520px"><h1 style="font-size:18px;margin:0 0 8px">Preview não carregou</h1><pre style="white-space:pre-wrap;color:#fb7185;background:rgba(255,255,255,.06);padding:14px;border-radius:12px">${escapeHtml(message)}</pre></div></body></html>`;
+function prepareCombinedSource(files: ParsedFile[]) {
+  const app = getFile(files, "App.jsx") || STARTER_APP;
+  const others = files.filter(
+    (f) => f.path !== "App.jsx" && !/\.css$/i.test(f.path),
+  );
+  const reactBindings = collectReactBindings([app, ...others.map((o) => o.content)].join("\n"));
+  const combined = [
+    reactBindings,
+    ...others.map((o) => `// ---- ${o.path} ----\n${stripModuleSyntax(o.content)}`),
+    `// ---- App.jsx ----\n${stripModuleSyntax(app)}`,
+  ].join("\n\n");
+  return combined;
 }
 
 function buildPreviewDocument(files: ParsedFile[]) {
-  const app = getFile(files, "App.jsx") || STARTER_APP;
   const css = getFile(files, "styles.css") || STARTER_CSS;
-  const prepared = prepareAppSource(app);
+  const prepared = prepareCombinedSource(files);
 
   return `<!doctype html>
 <html>
@@ -194,18 +200,56 @@ function buildPreviewDocument(files: ParsedFile[]) {
 </html>`;
 }
 
+
 function LocalPreview({ files, nonce }: { files: ParsedFile[]; nonce: number }) {
   const srcDoc = useMemo(() => buildPreviewDocument(files), [files]);
   return (
     <iframe
       key={nonce}
       title="Preview local"
-      sandbox="allow-scripts"
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
       srcDoc={srcDoc}
       className="h-full w-full border-0 bg-white"
     />
   );
 }
+
+const IDLE_STATUSES = [
+  "Saudando…",
+  "Analisando o pedido…",
+  "Planejando componentes…",
+  "Definindo estrutura…",
+  "Escolhendo paleta…",
+  "Preparando arquivos…",
+];
+
+function deriveStatus(text: string, tick: number): string {
+  const opens = [...text.matchAll(/<file\s+path=["']([^"']+)["']\s*>/g)];
+  const closes = [...text.matchAll(/<\/file>/g)];
+  if (opens.length === 0) return IDLE_STATUSES[tick % IDLE_STATUSES.length];
+  if (opens.length > closes.length) {
+    return `Gerando ${opens[opens.length - 1][1]}…`;
+  }
+  return `Finalizando ${opens[opens.length - 1][1]}…`;
+}
+
+function StatusBubble({ text }: { text: string }) {
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 900);
+    return () => clearInterval(id);
+  }, []);
+  const status = deriveStatus(text, tick);
+  return (
+    <div className="inline-flex items-center gap-2.5 rounded-2xl bg-white/[0.05] border border-white/10 px-3.5 py-2">
+      <Brain className="w-4 h-4 text-io-blue animate-pulse" />
+      <span key={status} className="text-sm text-white/80 font-medium animate-in fade-in duration-300">
+        {status}
+      </span>
+    </div>
+  );
+}
+
 
 
 function CodeViewer({ files }: { files: ParsedFile[] }) {
@@ -372,8 +416,11 @@ function ChatPage() {
             {messages.length === 0 && (
               <div className="text-center text-white/40 text-sm pt-10">Iniciando…</div>
             )}
-            {messages.map((message) => {
+            {messages.map((message, idx) => {
               const text = getMessageText(message);
+              const isLastAssistant =
+                message.role === "assistant" && idx === messages.length - 1;
+              const streamingThis = isLastAssistant && isLoading;
               const display = message.role === "assistant" ? stripFileBlocks(text) : text;
               const files = message.role === "assistant" ? parseFiles(text) : [];
               return (
@@ -385,23 +432,36 @@ function ChatPage() {
                     className={
                       message.role === "user"
                         ? "max-w-[85%] rounded-2xl rounded-tr-sm px-4 py-2.5 bg-white text-black text-sm font-medium shadow-lg"
-                        : "max-w-[95%] text-white/90 text-sm leading-relaxed"
+                        : "max-w-[95%] text-white/90 text-sm leading-relaxed space-y-2"
                     }
                   >
                     {message.role === "assistant" ? (
-                      <div className="prose prose-invert prose-sm max-w-none prose-p:my-2 prose-pre:hidden prose-code:hidden">
-                        <ReactMarkdown>{display || (isLoading ? "Criando os arquivos…" : "Pronto.")}</ReactMarkdown>
-                        {files.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setPreviewOpen(true)}
-                            className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/15 text-[10px] font-bold uppercase tracking-wider text-white transition"
-                          >
-                            <Code2 className="w-3 h-3" />
-                            Abrir {files.length} arquivo{files.length === 1 ? "" : "s"}
-                          </button>
-                        )}
-                      </div>
+                      streamingThis ? (
+                        <StatusBubble text={text} />
+                      ) : (
+                        <>
+                          {display && (
+                            <div className="prose prose-invert prose-sm max-w-none prose-p:my-2 prose-pre:hidden prose-code:hidden">
+                              <ReactMarkdown>{display}</ReactMarkdown>
+                            </div>
+                          )}
+                          {files.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {files.map((f) => (
+                                <button
+                                  key={f.path}
+                                  type="button"
+                                  onClick={() => setPreviewOpen(true)}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[11px] font-semibold text-white/85 transition"
+                                >
+                                  <FileCode2 className="w-3 h-3 text-io-blue" />
+                                  {f.path}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      )
                     ) : (
                       <span className="whitespace-pre-wrap">{display}</span>
                     )}
@@ -409,12 +469,13 @@ function ChatPage() {
                 </div>
               );
             })}
-            {isLoading && (
-              <div className="flex items-center gap-2 text-xs text-white/40">
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                <span>{status === "submitted" ? "Pensando…" : "Mensagem chegando em tempo real…"}</span>
-              </div>
-            )}
+            {isLoading &&
+              (messages.length === 0 || messages[messages.length - 1].role === "user") && (
+                <div className="flex justify-start">
+                  <StatusBubble text="" />
+                </div>
+              )}
+
             {error && (
               <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
                 {error.message || "Algo deu errado. Tente novamente."}
