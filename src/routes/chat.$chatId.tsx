@@ -214,41 +214,33 @@ function LocalPreview({ files, nonce }: { files: ParsedFile[]; nonce: number }) 
   );
 }
 
-const IDLE_STATUSES = [
-  "Saudando…",
-  "Analisando o pedido…",
-  "Planejando componentes…",
-  "Definindo estrutura…",
-  "Escolhendo paleta…",
-  "Preparando arquivos…",
-];
-
-function deriveStatus(text: string, tick: number): string {
+function extractFileStates(text: string) {
   const opens = [...text.matchAll(/<file\s+path=["']([^"']+)["']\s*>/g)];
-  const closes = [...text.matchAll(/<\/file>/g)];
-  if (opens.length === 0) return IDLE_STATUSES[tick % IDLE_STATUSES.length];
-  if (opens.length > closes.length) {
-    return `Gerando ${opens[opens.length - 1][1]}…`;
-  }
-  return `Finalizando ${opens[opens.length - 1][1]}…`;
+  const closes = (text.match(/<\/file>/g) ?? []).length;
+  const completed = opens.slice(0, closes).map((m) => m[1]);
+  const current = opens.length > closes ? opens[opens.length - 1][1] : null;
+  return { completed, current, started: opens.length > 0 };
 }
 
-function StatusBubble({ text }: { text: string }) {
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTick((t) => t + 1), 2600);
-    return () => clearInterval(id);
-  }, []);
-  const status = deriveStatus(text, tick);
+function ThinkingBubble() {
   return (
     <div className="inline-flex items-center gap-2.5 rounded-2xl bg-white/[0.05] border border-white/10 px-3.5 py-2">
       <Brain className="w-4 h-4 text-io-blue animate-pulse" />
-      <span key={status} className="text-sm text-white/80 font-medium animate-in fade-in duration-300">
-        {status}
-      </span>
+      <span className="text-sm text-white/80 font-medium">Pensando…</span>
     </div>
   );
 }
+
+function GeneratingBubble({ filename }: { filename: string }) {
+  return (
+    <div className="inline-flex items-center gap-2.5 rounded-2xl bg-white/[0.05] border border-white/10 px-3.5 py-2">
+      <FileCode2 className="w-4 h-4 text-io-blue animate-pulse" />
+      <span className="text-sm text-white/60 font-medium">Gerando código</span>
+      <span className="text-sm text-white font-semibold">{filename}</span>
+    </div>
+  );
+}
+
 
 
 
@@ -423,6 +415,8 @@ function ChatPage() {
               const streamingThis = isLastAssistant && isLoading;
               const display = message.role === "assistant" ? stripFileBlocks(text) : text;
               const files = message.role === "assistant" ? parseFiles(text) : [];
+              const fileState =
+                message.role === "assistant" ? extractFileStates(text) : null;
               return (
                 <div
                   key={message.id}
@@ -436,32 +430,38 @@ function ChatPage() {
                     }
                   >
                     {message.role === "assistant" ? (
-                      streamingThis ? (
-                        <StatusBubble text={text} />
-                      ) : (
-                        <>
-                          {display && (
-                            <div className="prose prose-invert prose-sm max-w-none prose-p:my-2 prose-pre:hidden prose-code:hidden">
-                              <ReactMarkdown>{display}</ReactMarkdown>
-                            </div>
-                          )}
-                          {files.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 pt-1">
-                              {files.map((f) => (
-                                <button
-                                  key={f.path}
-                                  type="button"
-                                  onClick={() => setPreviewOpen(true)}
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[11px] font-semibold text-white/85 transition"
-                                >
-                                  <FileCode2 className="w-3 h-3 text-io-blue" />
-                                  {f.path}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                      )
+                      <>
+                        {streamingThis && !display && !fileState?.started && <ThinkingBubble />}
+                        {display && (
+                          <div className="prose prose-invert prose-sm max-w-none prose-p:my-2 prose-pre:hidden prose-code:hidden">
+                            <ReactMarkdown>{display}</ReactMarkdown>
+                          </div>
+                        )}
+                        {streamingThis && fileState?.current && (
+                          <GeneratingBubble filename={fileState.current} />
+                        )}
+                        {(streamingThis
+                          ? fileState?.completed ?? []
+                          : files.map((f) => f.path)
+                        ).length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {(streamingThis
+                              ? (fileState?.completed ?? [])
+                              : files.map((f) => f.path)
+                            ).map((path) => (
+                              <button
+                                key={path}
+                                type="button"
+                                onClick={() => setPreviewOpen(true)}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[11px] font-semibold text-white/85 transition"
+                              >
+                                <FileCode2 className="w-3 h-3 text-io-blue" />
+                                {path}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <span className="whitespace-pre-wrap">{display}</span>
                     )}
@@ -472,9 +472,10 @@ function ChatPage() {
             {isLoading &&
               (messages.length === 0 || messages[messages.length - 1].role === "user") && (
                 <div className="flex justify-start">
-                  <StatusBubble text="" />
+                  <ThinkingBubble />
                 </div>
               )}
+
 
             {error && (
               <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
