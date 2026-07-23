@@ -415,6 +415,8 @@ function ChatPage() {
               const streamingThis = isLastAssistant && isLoading;
               const display = message.role === "assistant" ? stripFileBlocks(text) : text;
               const files = message.role === "assistant" ? parseFiles(text) : [];
+              const fileState =
+                message.role === "assistant" ? extractFileStates(text) : null;
               return (
                 <div
                   key={message.id}
@@ -428,32 +430,38 @@ function ChatPage() {
                     }
                   >
                     {message.role === "assistant" ? (
-                      streamingThis ? (
-                        <StatusBubble text={text} />
-                      ) : (
-                        <>
-                          {display && (
-                            <div className="prose prose-invert prose-sm max-w-none prose-p:my-2 prose-pre:hidden prose-code:hidden">
-                              <ReactMarkdown>{display}</ReactMarkdown>
-                            </div>
-                          )}
-                          {files.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 pt-1">
-                              {files.map((f) => (
-                                <button
-                                  key={f.path}
-                                  type="button"
-                                  onClick={() => setPreviewOpen(true)}
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[11px] font-semibold text-white/85 transition"
-                                >
-                                  <FileCode2 className="w-3 h-3 text-io-blue" />
-                                  {f.path}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                      )
+                      <>
+                        {streamingThis && !display && !fileState?.started && <ThinkingBubble />}
+                        {display && (
+                          <div className="prose prose-invert prose-sm max-w-none prose-p:my-2 prose-pre:hidden prose-code:hidden">
+                            <ReactMarkdown>{display}</ReactMarkdown>
+                          </div>
+                        )}
+                        {streamingThis && fileState?.current && (
+                          <GeneratingBubble filename={fileState.current} />
+                        )}
+                        {(streamingThis
+                          ? fileState?.completed ?? []
+                          : files.map((f) => f.path)
+                        ).length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {(streamingThis
+                              ? (fileState?.completed ?? [])
+                              : files.map((f) => f.path)
+                            ).map((path) => (
+                              <button
+                                key={path}
+                                type="button"
+                                onClick={() => setPreviewOpen(true)}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[11px] font-semibold text-white/85 transition"
+                              >
+                                <FileCode2 className="w-3 h-3 text-io-blue" />
+                                {path}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <span className="whitespace-pre-wrap">{display}</span>
                     )}
@@ -464,9 +472,10 @@ function ChatPage() {
             {isLoading &&
               (messages.length === 0 || messages[messages.length - 1].role === "user") && (
                 <div className="flex justify-start">
-                  <StatusBubble text="" />
+                  <ThinkingBubble />
                 </div>
               )}
+
 
             {error && (
               <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg p-3">
